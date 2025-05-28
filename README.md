@@ -3,6 +3,7 @@
 This repository is a hands-on guide to building conversational agents using LangGraph, a powerful library for creating stateful, multi-step LLM applications with graph-based logic. It includes progressively advanced examples that demonstrate how to construct intelligent workflows for chat and retrieval tasks.
 
 📂 What's Inside
+
 🗨️ Basic Chatbot
 A simple LangGraph-powered chatbot that maintains context across user interactions.
 
