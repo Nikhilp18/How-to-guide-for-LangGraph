@@ -86,31 +86,40 @@ def check_db_exists(state: State) -> State:
     config.read(config_path)
 
     persist_directory = config.get("Embedding_model_config", "persist_directory")
-
-    """Check if vectors exist in the persistent directory."""
     
     # Check if the SQLite database file exists
-    sqlite_path = os.path.join(persist_directory, 'chroma.sqlite3')
-    if not os.path.exists(sqlite_path):
-        print("SQLite database does not exist.")
+    sql_path = os.path.join(persist_directory, 'chroma.sqlite3')
+    if not os.path.exists(sql_path):
         state['embeded'] = False
         return state
 
-    # Look for directories with random names (e.g., '1f4d...' or similar)
-    random_dirs = [d for d in os.listdir(persist_directory) if os.path.isdir(os.path.join(persist_directory, d))]
-    
-    # Now check if any of those directories contain .bin files
-    found_bin_files = False
-    for random_dir in random_dirs:
-        bin_files = glob.glob(os.path.join(persist_directory, random_dir, '*.bin'))
-        if len(bin_files)>=4:
-            found_bin_files = True
-            break
+    subdirs = [
+        d for d in os.listdir(persist_directory)
+        if os.path.isdir(os.path.join(persist_directory, d))
+    ]
 
-    if not found_bin_files:
+    bin_files_found = any(
+        len(glob.glob(os.path.join(persist_directory, subdir, '*.bin'))) >= 4
+        for subdir in subdirs
+    )
+
+    if not bin_files_found:
         print("No .bin files found in the vector store.")
         state['embeded'] = False
         return state
+
+    embedding_model = CustomEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
+    print("Vector store and embeddings are present.")
+    persistent_client = chromadb.PersistentClient(path=persist_directory)
+
+    vector_db = Chroma(
+    client=persistent_client,
+    embedding_function=embedding_model)
+
+    state["vector_db"] = vector_db # type: ignore
+    state['embeded'] = True
+    return state
 
     embedding_model = CustomEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
